@@ -45,33 +45,48 @@ public sealed record GridTariff(
         IsNight(hourStartUtc, publicHolidaysOslo) ? EnergyNightExVatOrePerKwh : EnergyDayExVatOrePerKwh;
 
     /// <summary>
-    /// docs/DOMAIN.md §4a: the average of the three highest daily peak hourly kWh values in
-    /// the month, taken from three different days. Grouping by Oslo-local calendar day and
-    /// keeping only each day's single highest hour is what makes "three different days"
-    /// automatic. If fewer than three days of consumption are supplied, averages over
-    /// however many daily peaks exist -- docs/DOMAIN.md doesn't specify a partial-month
-    /// rule, and this is the natural generalisation.
+    /// docs/DOMAIN.md §4a: the three highest daily peak hourly kWh values in the month,
+    /// taken from three different days, ranked highest first. Grouping by Oslo-local
+    /// calendar day and keeping only each day's single highest hour is what makes "three
+    /// different days" automatic. Returns fewer than <paramref name="take"/> pairs if fewer
+    /// days of consumption are supplied -- docs/DOMAIN.md doesn't specify a partial-month
+    /// rule, and this is the natural generalisation. Used both by
+    /// <see cref="CalculateTopThreeAverageKw"/> below and by
+    /// <c>Spotlys.Domain.Metering.PeakTracker</c>, which needs the individual ranked days
+    /// (not just their average) for the "Din topp: 4,2 kW" readout.
     /// </summary>
+    public static IReadOnlyList<(DateOnly Day, decimal PeakKw)> RankedDailyPeaksKw(
+        IReadOnlyList<HourlyConsumption> consumption, int take = 3)
+    {
+        ArgumentNullException.ThrowIfNull(consumption);
+
+        return consumption
+            .GroupBy(c => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(c.HourStartUtc, Oslo).Date))
+            .Select(g => (Day: g.Key, PeakKw: g.Max(c => c.Kwh)))
+            .OrderByDescending(p => p.PeakKw)
+            .Take(take)
+            .ToList();
+    }
+
+    /// <summary>The average of <see cref="RankedDailyPeaksKw"/>'s top 3 -- the figure the
+    /// capacity-step lookup actually uses (docs/DOMAIN.md §4a).</summary>
     public static decimal CalculateTopThreeAverageKw(IReadOnlyList<HourlyConsumption> monthConsumption)
     {
-        ArgumentNullException.ThrowIfNull(monthConsumption);
-
-        var dailyPeaks = monthConsumption
-            .GroupBy(c => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(c.HourStartUtc, Oslo).Date))
-            .Select(g => g.Max(c => c.Kwh))
-            .OrderByDescending(peak => peak)
-            .Take(3)
-            .ToList();
-
+        var dailyPeaks = RankedDailyPeaksKw(monthConsumption).Select(p => p.PeakKw).ToList();
         return dailyPeaks.Count == 0 ? 0m : dailyPeaks.Average();
     }
 
-    /// <summary>Looks up the monthly kapasitetsledd for a given top-3 average kW. A value
-    /// at or above the highest defined step's <see cref="CapacityStep.ToKw"/> uses that
-    /// step's rate rather than silently returning zero.</summary>
-    public decimal CapacityStepMonthlyExVatNok(decimal averageTopKw)
+    /// <summary>Looks up the monthly kapasitetsledd for a given top-3 average kW against an
+    /// arbitrary step table. A value at or above the highest defined step's
+    /// <see cref="CapacityStep.ToKw"/> uses that step's rate rather than silently returning
+    /// zero. Static so <c>Spotlys.Domain.Scheduling.LoadOptimizer</c> (no I/O, no
+    /// <see cref="GridTariff"/> instance of its own -- just the step table) can reuse the
+    /// exact same lookup instead of duplicating it.</summary>
+    public static decimal CapacityStepMonthlyExVatNok(IReadOnlyList<CapacityStep> steps, decimal averageTopKw)
     {
-        foreach (var step in CapacitySteps)
+        ArgumentNullException.ThrowIfNull(steps);
+
+        foreach (var step in steps)
         {
             if (averageTopKw >= step.FromKw && averageTopKw < step.ToKw)
             {
@@ -79,6 +94,10 @@ public sealed record GridTariff(
             }
         }
 
-        return CapacitySteps.Count > 0 ? CapacitySteps[^1].MonthlyExVatNok : 0m;
+        return steps.Count > 0 ? steps[^1].MonthlyExVatNok : 0m;
     }
+
+    /// <inheritdoc cref="CapacityStepMonthlyExVatNok(IReadOnlyList{CapacityStep}, decimal)"/>
+    public decimal CapacityStepMonthlyExVatNok(decimal averageTopKw) =>
+        CapacityStepMonthlyExVatNok(CapacitySteps, averageTopKw);
 }
