@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Spotlys.Domain.Pricing;
+using Spotlys.Infrastructure.Forecasting;
+using Spotlys.Infrastructure.Hydrology;
 using Spotlys.Infrastructure.Ingestion;
 using Spotlys.Infrastructure.Pricing;
+using Spotlys.Infrastructure.Weather;
 
 namespace Spotlys.Infrastructure;
 
@@ -18,6 +21,18 @@ public sealed class SpotlysDbContext(DbContextOptions<SpotlysDbContext> options)
     internal DbSet<SchemeParameterRow> SchemeParameters => Set<SchemeParameterRow>();
 
     internal DbSet<GridTariffRow> GridTariffs => Set<GridTariffRow>();
+
+    internal DbSet<WeatherPointRow> WeatherPoints => Set<WeatherPointRow>();
+
+    internal DbSet<WeatherForecastRow> WeatherForecasts => Set<WeatherForecastRow>();
+
+    internal DbSet<WeatherFetchCacheRow> WeatherFetchCache => Set<WeatherFetchCacheRow>();
+
+    internal DbSet<HydrologyObservationRow> HydrologyObservations => Set<HydrologyObservationRow>();
+
+    internal DbSet<HydrologyWeekNormRow> HydrologyWeekNorms => Set<HydrologyWeekNormRow>();
+
+    internal DbSet<ModelVersionRow> ModelVersions => Set<ModelVersionRow>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
