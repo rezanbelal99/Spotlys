@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Spotlys.Infrastructure;
@@ -11,9 +12,11 @@ using Spotlys.Infrastructure;
 namespace Spotlys.Infrastructure.Migrations
 {
     [DbContext(typeof(SpotlysDbContext))]
-    partial class SpotlysDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260917160751_AddWeatherHydrology")]
+    partial class AddWeatherHydrology
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -59,81 +62,6 @@ namespace Spotlys.Infrastructure.Migrations
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("HourStartUtc"), "brin");
 
                     b.ToTable("price_observation", (string)null);
-                });
-
-            modelBuilder.Entity("Spotlys.Infrastructure.Forecasting.ModelVersionRow", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
-
-                    b.Property<decimal?>("BacktestMae")
-                        .HasColumnType("numeric(10,4)")
-                        .HasColumnName("backtest_mae");
-
-                    b.Property<decimal?>("BacktestSkill")
-                        .HasColumnType("numeric(6,4)")
-                        .HasColumnName("backtest_skill");
-
-                    b.Property<string>("GitSha")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)")
-                        .HasColumnName("git_sha");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("OnnxPath")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("onnx_path");
-
-                    b.Property<string>("OnnxSha256")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("onnx_sha256");
-
-                    b.Property<decimal>("Quantile")
-                        .HasColumnType("numeric(3,2)")
-                        .HasColumnName("quantile");
-
-                    b.Property<string>("Regime")
-                        .IsRequired()
-                        .HasMaxLength(1)
-                        .HasColumnType("character varying(1)")
-                        .HasColumnName("regime");
-
-                    b.Property<DateTimeOffset>("TrainDataToUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("train_data_to");
-
-                    b.Property<DateTimeOffset>("TrainedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("trained_at_utc");
-
-                    b.Property<string>("Zone")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
-                        .HasColumnName("zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Zone", "Regime", "Quantile")
-                        .IsUnique()
-                        .HasFilter("is_active");
-
-                    b.HasIndex("Zone", "Regime", "Quantile", "TrainedAtUtc");
-
-                    b.ToTable("model_version", (string)null);
                 });
 
             modelBuilder.Entity("Spotlys.Infrastructure.Hydrology.HydrologyObservationRow", b =>

@@ -2,11 +2,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Quartz;
 using Serilog;
+using Spotlys.Application.Hydrology;
 using Spotlys.Application.Pricing;
+using Spotlys.Application.Weather;
 using Spotlys.Domain.Pricing;
 using Spotlys.Infrastructure;
 using Spotlys.Ingestion;
+using Spotlys.Ingestion.Hydrology;
 using Spotlys.Ingestion.Pricing;
+using Spotlys.Ingestion.Weather;
 
 // Two modes:
 //   (default) the long-running Worker Service, scheduling IngestDayAheadPricesJob via
@@ -90,6 +94,10 @@ static async Task RunWorkerAsync(string[] args)
     builder.Services.AddSingleton<IngestionTelemetry>();
     builder.Services.AddScoped<IngestDayAheadPricesUseCase>();
     builder.Services.AddScoped<IngestDayAheadPricesJob>();
+    builder.Services.AddScoped<IngestWeatherForecastUseCase>();
+    builder.Services.AddScoped<IngestWeatherForecastJob>();
+    builder.Services.AddScoped<IngestHydrologyUseCase>();
+    builder.Services.AddScoped<IngestHydrologyJob>();
 
     var connectionString = builder.Configuration.GetConnectionString("Spotlys")
         ?? throw new InvalidOperationException("Missing ConnectionStrings:Spotlys.");
@@ -111,6 +119,38 @@ static async Task RunWorkerAsync(string[] args)
                 .EndingDailyAt(new TimeOnly(14, 30))
                 .WithInterval(5, IntervalUnit.Minute)
                 .OnEveryDay()
+                .InTimeZone(osloTimeZone)));
+
+        var weatherJobKey = new JobKey(IngestWeatherForecastUseCase.JobName);
+        q.AddJob<QuartzIngestionJobAdapter<IngestWeatherForecastJob>>(j => j
+            .WithIdentity(weatherJobKey)
+            .StoreDurably());
+
+        // docs/ARCHITECTURE.md §5: "04:00, 10:00, 16:00, 22:00".
+        q.AddTrigger(t => t
+            .ForJob(weatherJobKey)
+            .WithIdentity($"{IngestWeatherForecastUseCase.JobName}-trigger")
+            .WithDailyTimeIntervalSchedule(s => s
+                .StartingDailyAt(new TimeOnly(4, 0))
+                .EndingDailyAt(new TimeOnly(22, 0))
+                .WithInterval(6, IntervalUnit.Hour)
+                .OnEveryDay()
+                .InTimeZone(osloTimeZone)));
+
+        var hydrologyJobKey = new JobKey(IngestHydrologyUseCase.JobName);
+        q.AddJob<QuartzIngestionJobAdapter<IngestHydrologyJob>>(j => j
+            .WithIdentity(hydrologyJobKey)
+            .StoreDurably());
+
+        // docs/ARCHITECTURE.md §5: "Wednesdays 09:00".
+        q.AddTrigger(t => t
+            .ForJob(hydrologyJobKey)
+            .WithIdentity($"{IngestHydrologyUseCase.JobName}-trigger")
+            .WithDailyTimeIntervalSchedule(s => s
+                .StartingDailyAt(new TimeOnly(9, 0))
+                .EndingDailyAt(new TimeOnly(9, 0))
+                .WithInterval(1, IntervalUnit.Day)
+                .OnDaysOfTheWeek(DayOfWeek.Wednesday)
                 .InTimeZone(osloTimeZone)));
 
         // Survives restarts, no double-firing across replicas (docs/ARCHITECTURE.md §5).

@@ -23,6 +23,12 @@
       by scanning the assembly either way, and a test class is never part of a public API
       surface by definition, so there's nothing this rule protects here.
     -->
-    <NoWarn>$(NoWarn);CA1707;CA2007;CA1515</NoWarn>
+    <!--
+      CA5394 (System.Random is not cryptographically secure) fires on any seeded Random
+      used to generate reproducible test inputs (e.g. random historic as_of values in the
+      point-in-time suite). Nothing under test is a security boundary; a fixed seed is the
+      point, not a weakness.
+    -->
+    <NoWarn>$(NoWarn);CA1707;CA2007;CA1515;CA5394</NoWarn>
   </PropertyGroup>
 </Project>
