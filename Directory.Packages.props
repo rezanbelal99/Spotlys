@@ -5,6 +5,8 @@
   <ItemGroup>
     <!-- Api -->
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+    <!-- ONNX inference (docs/adr/0002: Python trains, .NET serves) -->
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" />
     <!-- EF Core / Postgres -->
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />

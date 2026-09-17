@@ -40,6 +40,8 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IWeatherFetchCacheStore, WeatherFetchCacheRepository>();
         services.AddScoped<IHydrologyRepository, HydrologyRepository>();
         services.AddScoped<IModelVersionRepository, ModelVersionRepository>();
+        services.AddSingleton<OnnxSessionCache>();
+        services.AddScoped<IForecastService, OnnxForecastService>();
 
         services.AddHttpClient<IDayAheadPriceSource, HvakosterstrommenPriceSource>(client =>
         {
