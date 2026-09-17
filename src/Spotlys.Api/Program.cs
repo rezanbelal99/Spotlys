@@ -5,6 +5,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using Serilog;
 using Spotlys.Api;
+using Spotlys.Api.Forecasting;
 using Spotlys.Api.Pricing;
 using Spotlys.Api.Status;
 using Spotlys.Infrastructure;
@@ -95,5 +96,6 @@ var api = app.MapGroup("/api/v1");
 api.MapPricingEndpoints();
 api.MapStatusEndpoints();
 api.MapBillEndpoints();
+api.MapForecastEndpoints();
 
 app.Run();
