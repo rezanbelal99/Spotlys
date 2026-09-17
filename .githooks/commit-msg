@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Enforces Conventional Commits shape (docs/DEVOPS.md §2), which feeds the auto-generated
+# CHANGELOG (docs/ENGINEERING.md §1).
+set -euo pipefail
+
+msg_file="$1"
+first_line=$(head -n1 "$msg_file")
+
+pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9-]+\))?!?: .{1,}'
+
+if ! [[ "$first_line" =~ $pattern ]]; then
+  echo "commit-msg: '$first_line' isn't a Conventional Commit."
+  echo "  Expected: type(scope?)!?: description, e.g. 'feat(ingestion): add day-ahead price job'"
+  echo "  Types: feat fix docs style refactor perf test build ci chore revert"
+  exit 1
+fi

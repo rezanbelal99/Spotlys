@@ -1,0 +1,91 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-spotlys}
+      POSTGRES_USER: ${POSTGRES_USER:-spotlys}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-spotlys}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Inside the compose network, Postgres is reachable at the service name "postgres", not
+  # "localhost" -- that's only correct for the host-side ConnectionStrings__Spotlys in .env
+  # (used when running `dotnet run` directly on the host, e.g. via `make migrate`).
+  migrator:
+    build:
+      context: ..
+      dockerfile: src/Spotlys.Migrator/Dockerfile
+    environment:
+      ConnectionStrings__Spotlys: Host=postgres;Port=5432;Database=${POSTGRES_DB:-spotlys};Username=${POSTGRES_USER:-spotlys};Password=${POSTGRES_PASSWORD:-devpassword}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: ..
+      dockerfile: src/Spotlys.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ConnectionStrings__Spotlys: Host=postgres;Port=5432;Database=${POSTGRES_DB:-spotlys};Username=${POSTGRES_USER:-spotlys};Password=${POSTGRES_PASSWORD:-devpassword}
+    ports:
+      - "8080:8080"
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+
+  ingestion:
+    build:
+      context: ..
+      dockerfile: src/Spotlys.Ingestion/Dockerfile
+    environment:
+      ConnectionStrings__Spotlys: Host=postgres;Port=5432;Database=${POSTGRES_DB:-spotlys};Username=${POSTGRES_USER:-spotlys};Password=${POSTGRES_PASSWORD:-devpassword}
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+
+  web:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host"
+    volumes:
+      - ../src/Spotlys.Web:/app
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+  # Phase 5 fills these in for real (docs/ROADMAP.md); present now so `docker compose up`
+  # already matches docs/ARCHITECTURE.md §8's description of the local stack.
+  grafana:
+    image: grafana/grafana:11.2.0
+    ports:
+      - "3001:3000" # 3000 is commonly taken by other local dev servers
+    volumes:
+      - ../deploy/grafana:/etc/grafana/provisioning
+
+  prometheus:
+    image: prom/prometheus:v3.0.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../deploy/prometheus:/etc/prometheus
+
+  loki:
+    image: grafana/loki:3.2.0
+    ports:
+      - "3100:3100"
+
+volumes:
+  postgres-data:

@@ -1,0 +1,6 @@
+.venv/
+cache/
+out/
+data/
+.ipynb_checkpoints/
+__pycache__/

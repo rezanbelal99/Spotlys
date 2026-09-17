@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spotlys-web
+  namespace: spotlys
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: spotlys-web }
+  template:
+    metadata:
+      labels: { app: spotlys-web }
+    spec:
+      containers:
+        - name: web
+          image: spotlys-web:latest # replaced with the real registry/tag by container.yml
+          ports:
+            - containerPort: 80
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 200m, memory: 128Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spotlys-web
+  namespace: spotlys
+spec:
+  selector: { app: spotlys-web }
+  ports:
+    - port: 80
+      targetPort: 80

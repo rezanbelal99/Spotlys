@@ -1,0 +1,39 @@
+name: container
+
+# Prepared, not exercised -- this session has no self-hosted Gitea runner or registry
+# access (confirmed scope: local-only this session). Same shape as the pipeline in
+# docs/DEVOPS.md §5; the registry name and deploy step need the user's own runner secrets
+# before this actually runs anywhere.
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-push:
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        service: [api, ingestion, web, migrator]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: |
+          docker build \
+            -f src/Spotlys.${{ matrix.service == 'api' && 'Api' || matrix.service == 'ingestion' && 'Ingestion' || matrix.service == 'web' && 'Web' || 'Migrator' }}/Dockerfile \
+            -t spotlys-${{ matrix.service }}:${{ gitea.sha }} \
+            .
+
+      - name: SBOM (syft)
+        run: syft spotlys-${{ matrix.service }}:${{ gitea.sha }} -o spdx-json > sbom-${{ matrix.service }}.json
+
+      - name: Trivy scan
+        run: trivy image --exit-code 1 --severity HIGH,CRITICAL spotlys-${{ matrix.service }}:${{ gitea.sha }}
+
+      # Push and deploy steps intentionally left as TODO: fill in the registry host and
+      # the kubeconfig/deploy step once this workflow runs on the real self-hosted runner.
+      # - name: Push
+      #   run: docker push <registry>/spotlys-${{ matrix.service }}:${{ gitea.sha }}
+      # - name: Deploy to staging
+      #   run: kubectl set image deployment/spotlys-${{ matrix.service }} ...

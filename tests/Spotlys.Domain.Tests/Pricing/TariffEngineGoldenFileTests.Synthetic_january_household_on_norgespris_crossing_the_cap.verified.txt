@@ -1,0 +1,30 @@
+﻿{
+  EnergyExVatNok: 3428.00,
+  EnergileddExVatNok: 1631.17056,
+  KapasitetsleddExVatNok: 312.0,
+  ForbruksavgiftExVatNok: 424.3776,
+  EnovaExVatNok: 59.52,
+  VatRate: 0.25,
+  TotalExVatNok: 5855.06816,
+  TotalIncVatNok: 7318.8352000,
+  TopThreeAverageKw: 8.0,
+  HourlyLineCount: 744,
+  FirstHour: {
+    HourStartUtc: DateTimeOffset_1,
+    SpotExVatOrePerKwh: 150.0,
+    Kwh: 8.0,
+    EnergyCostExVatOre: 320.00,
+    EnergileddExVatOre: 173.824,
+    IsNightRate: true,
+    TotalExVatOre: 493.824
+  },
+  PeakEveningHour: {
+    HourStartUtc: DateTimeOffset_1,
+    SpotExVatOrePerKwh: 150.0,
+    Kwh: 8.0,
+    EnergyCostExVatOre: 320.00,
+    EnergileddExVatOre: 173.824,
+    IsNightRate: true,
+    TotalExVatOre: 493.824
+  }
+}

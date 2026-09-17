@@ -1,0 +1,30 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors></WarningsNotAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisMode>All</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <!--
+      CA1812 ("apparently never instantiated") false positives on every internal class that
+      is only ever resolved through DI's IServiceCollection.AddScoped, since the analyzer's
+      heuristic doesn't trace generic type-argument usage. This is a known, widely
+      suppressed rule in ASP.NET Core codebases for exactly this reason; disabling it here
+      (rather than per class) avoids a SuppressMessage attribute on every repository and
+      handler class in Infrastructure/Api/Ingestion.
+    -->
+    <!--
+      CA1303 ("pass literal strings through a resource table") is meant for user-facing
+      WinForms/WPF-style UI text. It would otherwise fire on every Console.WriteLine and
+      every Serilog message template in the backend; neither is user-facing product copy.
+      The real localisation requirement (docs/DESIGN.md §7: Norwegian + English) applies to
+      Spotlys.Web's own resource files, which this rule doesn't check anyway.
+    -->
+    <NoWarn>$(NoWarn);CA1812;CA1303</NoWarn>
+  </PropertyGroup>
+</Project>

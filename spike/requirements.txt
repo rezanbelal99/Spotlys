@@ -1,0 +1,7 @@
+requests==2.32.3
+pandas==3.0.5
+lightgbm==4.7.0
+scikit-learn==1.9.1
+ipykernel==6.29.5
+nbconvert==7.16.4
+holidays==0.63

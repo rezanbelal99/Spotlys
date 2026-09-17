@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spotlys-api
+  namespace: spotlys
+spec:
+  replicas: 1 # no HA this phase (docs/DEVOPS.md §11): one node, one replica, documented trade-off
+  selector:
+    matchLabels: { app: spotlys-api }
+  template:
+    metadata:
+      labels: { app: spotlys-api }
+    spec:
+      containers:
+        - name: api
+          image: spotlys-api:latest # replaced with the real registry/tag by container.yml
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef: { name: spotlys-secrets }
+          env:
+            - name: ASPNETCORE_HTTP_PORTS
+              value: "8080"
+          readinessProbe:
+            httpGet: { path: /health/ready, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health/live, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spotlys-api
+  namespace: spotlys
+spec:
+  selector: { app: spotlys-api }
+  ports:
+    - port: 8080
+      targetPort: 8080

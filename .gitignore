@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+
+# .NET
+bin/
+obj/
+*.user
+out/
+
+# EF migration bundles (built by CI, not committed)
+*.bundle
+efbundle
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Editors
+.vs/
+.idea/
+*.swp
+
+# Env
+.env
+.env.local
+
+# Logs
+*.log
+
+# Verify.Xunit -- .received.txt is a failed run's output, regenerated every time;
+# .verified.txt (the actual golden file) is committed.
+*.received.txt

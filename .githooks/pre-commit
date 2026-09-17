@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Fast, local checks only -- under 5 seconds (docs/DEVOPS.md §2). Integration tests do NOT
+# run here; that's what makes a hook survive rather than get disabled.
+set -euo pipefail
+
+echo "pre-commit: dotnet format --verify-no-changes"
+dotnet format --verify-no-changes
+
+if [ -f src/Spotlys.Web/package.json ]; then
+  echo "pre-commit: eslint"
+  (cd src/Spotlys.Web && npx eslint --max-warnings 0 .)
+fi
+
+if command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks"
+  gitleaks protect --staged --redact
+else
+  echo "pre-commit: gitleaks not found on PATH."
+  echo "  Install it (e.g. 'brew install gitleaks') before committing -- this is a"
+  echo "  non-negotiable check per docs/DEVOPS.md §2, not something to skip quietly."
+  exit 1
+fi

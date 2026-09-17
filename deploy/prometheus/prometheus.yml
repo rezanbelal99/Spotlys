@@ -1,0 +1,11 @@
+# Placeholder scrape config -- Phase 5 (docs/ROADMAP.md) wires up real dashboards and
+# alert rules (docs/DEVOPS.md §7). Present now so `docker compose up` already includes the
+# observability stack docs/ARCHITECTURE.md §8 describes.
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: spotlys-api
+    static_configs:
+      - targets: ["api:8080"]
+    metrics_path: /metrics

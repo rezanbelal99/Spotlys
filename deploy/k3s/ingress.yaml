@@ -1,0 +1,23 @@
+# No TLS yet -- add cert-manager + an Issuer once the real domain (docs/README.md §5:
+# spotlys.no or spotlys.app) points at this cluster.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: spotlys
+  namespace: spotlys
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+spec:
+  ingressClassName: traefik # k3s's built-in default
+  rules:
+    - host: spotlys.no # replace with the real domain once DNS is pointed here
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service: { name: spotlys-api, port: { number: 8080 } }
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: spotlys-web, port: { number: 80 } }

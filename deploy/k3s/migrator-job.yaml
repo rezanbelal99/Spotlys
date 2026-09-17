@@ -1,0 +1,17 @@
+# Migrations run in a dedicated Job, never at API startup (docs/ARCHITECTURE.md §4). Apply
+# this and wait for completion before applying api.yaml/ingestion.yaml -- see README.md.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: spotlys-migrator
+  namespace: spotlys
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrator
+          image: spotlys-migrator:latest # replaced with the real registry/tag by container.yml
+          envFrom:
+            - secretRef: { name: spotlys-secrets }

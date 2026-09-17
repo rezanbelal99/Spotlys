@@ -1,0 +1,24 @@
+# A Deployment, not a Job/CronJob: the Ingestion host itself runs Quartz's persistent
+# scheduler continuously (docs/ARCHITECTURE.md §5) -- the schedule lives in the Postgres
+# job store, not in Kubernetes' own scheduling.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spotlys-ingestion
+  namespace: spotlys
+spec:
+  replicas: 1 # Quartz's Postgres job store prevents double-firing if this ever scales out
+  selector:
+    matchLabels: { app: spotlys-ingestion }
+  template:
+    metadata:
+      labels: { app: spotlys-ingestion }
+    spec:
+      containers:
+        - name: ingestion
+          image: spotlys-ingestion:latest # replaced with the real registry/tag by container.yml
+          envFrom:
+            - secretRef: { name: spotlys-secrets }
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 250m, memory: 256Mi }
