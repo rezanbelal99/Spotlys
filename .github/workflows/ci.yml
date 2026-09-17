@@ -1,0 +1,55 @@
+name: ci
+
+# GitHub-hosted mirror of .gitea/workflows/ci.yml's checks (docs/DEVOPS.md §5), so
+# "CI must pass" (docs/DEVOPS.md §2) has something real to gate on for this GitHub repo.
+# The Gitea workflow targets a self-hosted runner and stays as the source of truth if that
+# runner is ever stood up; this one runs on GitHub's own runners in the meantime.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: spotlys_test
+          POSTGRES_USER: spotlys
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Restore
+        run: dotnet restore
+      - name: Format check
+        run: dotnet format --verify-no-changes
+      - name: Build (warnings as errors)
+        run: dotnet build --no-restore -warnaserror
+      - name: Test
+        run: dotnet test --no-build --collect:"XPlat Code Coverage"
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/Spotlys.Web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: src/Spotlys.Web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npx tsc --noEmit
+      - run: npm run test -- --run
+      - run: npm run build
