@@ -6,6 +6,19 @@ using WireMock.Server;
 
 namespace Spotlys.Integration.Tests.Weather;
 
+/// <summary>Fixed just after the committed fixture's own <c>meta.updated_at</c>
+/// (2026-09-17T15:31:43Z) so horizon-filtering assertions are deterministic regardless of
+/// when the suite actually runs -- <see cref="TimeProvider.System"/> here would make
+/// <see cref="Entries_beyond_the_horizon_are_not_included"/> pass or fail depending on how
+/// much real wall-clock time has passed since the fixture was captured (found live: it
+/// silently stopped trimming anything once real "now" drifted far enough past the fixture's
+/// ~9-day span for a 24h horizon to cover the whole thing). CLAUDE.md's "no DateTime.Now,
+/// inject TimeProvider" rule exists for exactly this failure mode.</summary>
+internal sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
+{
+    public override DateTimeOffset GetUtcNow() => now;
+}
+
 /// <summary>Trivial in-memory fake -- the real store is Postgres-backed
 /// (WeatherFetchCacheRepository), which these contract tests don't need; they only care
 /// about MetLocationforecastSource's own request/response handling.</summary>
@@ -36,8 +49,10 @@ public sealed class MetLocationforecastSourceContractTests : IDisposable
     private static string FixturePath(string name) =>
         Path.Combine(AppContext.BaseDirectory, "Fixtures", "met", name);
 
+    private static readonly DateTimeOffset FixtureNow = new(2026, 9, 17, 16, 0, 0, TimeSpan.Zero);
+
     private static MetLocationforecastSource CreateSource(HttpClient client, IWeatherFetchCacheStore? cache = null) =>
-        new(client, cache ?? new FakeWeatherFetchCacheStore(), TimeProvider.System);
+        new(client, cache ?? new FakeWeatherFetchCacheStore(), new FixedTimeProvider(FixtureNow));
 
     [Fact]
     public async Task Real_recorded_response_parses_issued_time_from_meta_not_headers()
