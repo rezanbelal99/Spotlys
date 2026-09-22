@@ -10,7 +10,9 @@ using Spotlys.Api.Accounts;
 using Spotlys.Api.Forecasting;
 using Spotlys.Api.Metering;
 using Spotlys.Api.Pricing;
+using Spotlys.Api.Scheduling;
 using Spotlys.Api.Status;
+using Spotlys.Application.Scheduling;
 using Spotlys.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -115,10 +117,16 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy => policy
         .WithOrigins("http://localhost:5173")
         .AllowAnyHeader()
-        .AllowAnyMethod());
+        .AllowAnyMethod()
+        // Cookie auth (docs/ARCHITECTURE.md §6) needs the browser to send/accept the
+        // cookie cross-origin -- AllowAnyOrigin() and AllowCredentials() are mutually
+        // exclusive in ASP.NET Core, which is exactly why WithOrigins names the dev
+        // server explicitly rather than a wildcard.
+        .AllowCredentials());
 });
 
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<PlanChargeUseCase>();
 
 var app = builder.Build();
 
@@ -154,5 +162,6 @@ api.MapGdprEndpoints();
 api.MapMeterEndpoints();
 api.MapConsumptionImportEndpoints();
 api.MapPeakEndpoints();
+api.MapPlanEndpoints();
 
 app.Run();

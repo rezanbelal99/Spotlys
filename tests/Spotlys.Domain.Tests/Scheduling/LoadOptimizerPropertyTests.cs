@@ -71,7 +71,7 @@ public class LoadOptimizerPropertyTests
         FullScenario.Sample(s =>
         {
             var optimized = LoadOptimizer.Optimize(s.Load, s.MarginalCost, s.BaselineLoadKw, s.Steps, s.CurrentPeakKw);
-            var naive = NaiveImmediateSchedule(s.Load, s.MarginalCost, s.BaselineLoadKw, s.Steps, s.CurrentPeakKw);
+            var naive = LoadOptimizer.NaiveImmediateSchedule(s.Load, s.MarginalCost, s.BaselineLoadKw, s.Steps, s.CurrentPeakKw);
 
             Assert.True(
                 optimized.TotalCostExVatOre <= naive.TotalCostExVatOre + 0.01m,
@@ -110,72 +110,4 @@ public class LoadOptimizerPropertyTests
         });
     }
 
-    /// <summary>Fills the load starting at <see cref="FlexibleLoad.NotBefore"/> regardless
-    /// of cost -- the naive strategy the optimizer must always beat or match.</summary>
-    private static Schedule NaiveImmediateSchedule(
-        FlexibleLoad load,
-        IReadOnlyDictionary<DateTimeOffset, decimal> marginalCost,
-        IReadOnlyDictionary<DateTimeOffset, decimal> baselineLoadKw,
-        IReadOnlyList<CapacityStep> steps,
-        decimal currentThirdHighestPeakKw)
-    {
-        // No self-imposed limit -- matches LoadOptimizer's own "always try enough headroom
-        // to use the full MaxPowerKw" candidate, so this naive strategy isn't artificially
-        // starved of headroom the real optimizer would have available too.
-        var highestBaselineKw = baselineLoadKw.Count > 0 ? baselineLoadKw.Values.Max() : 0m;
-        var ceiling = Math.Max(highestBaselineKw + load.MaxPowerKw, currentThirdHighestPeakKw);
-        var candidateHours = marginalCost.Keys
-            .Where(h => h >= load.NotBefore && h < load.Deadline)
-            .OrderBy(h => h)
-            .ToList();
-
-        var remaining = load.EnergyKwh;
-        var allocations = new List<HourAllocation>();
-        var energyCostExVatOre = 0m;
-
-        foreach (var hour in candidateHours)
-        {
-            if (remaining <= 0m)
-            {
-                break;
-            }
-
-            var baseline = baselineLoadKw.GetValueOrDefault(hour, 0m);
-            var headroom = Math.Max(0m, ceiling - baseline);
-            var hourCap = Math.Min(load.MaxPowerKw, headroom);
-            if (hourCap <= 0m)
-            {
-                continue;
-            }
-
-            // Same physical constraint LoadOptimizer itself respects -- a naive strategy
-            // that ignores it would be solving an easier, unconstrained problem, not a fair
-            // baseline for "any valid schedule of this load."
-            if (!load.Interruptible && hourCap < load.MinPowerKw)
-            {
-                continue;
-            }
-
-            var allocated = Math.Min(remaining, hourCap);
-            allocations.Add(new HourAllocation(hour, allocated, marginalCost[hour]));
-            energyCostExVatOre += allocated * marginalCost[hour];
-            remaining -= allocated;
-        }
-
-        // Same rule LoadOptimizer itself uses: price off the peak actually realized, not the
-        // (here, deliberately generous) self-imposed ceiling -- otherwise this "naive"
-        // baseline is unrealistically expensive and the cost-never-exceeds invariant below
-        // would be nearly vacuous.
-        var realizedPeakKw = allocations.Count == 0
-            ? currentThirdHighestPeakKw
-            : Math.Max(currentThirdHighestPeakKw, allocations.Max(a => baselineLoadKw.GetValueOrDefault(a.HourStartUtc, 0m) + a.AllocatedKwh));
-
-        var capacityDeltaExVatNok = Math.Max(0m,
-            GridTariff.CapacityStepMonthlyExVatNok(steps, realizedPeakKw) -
-            GridTariff.CapacityStepMonthlyExVatNok(steps, currentThirdHighestPeakKw));
-
-        return new Schedule(
-            allocations, realizedPeakKw, energyCostExVatOre + capacityDeltaExVatNok * 100m,
-            remaining <= 0m, Math.Max(0m, remaining), "naive");
-    }
 }

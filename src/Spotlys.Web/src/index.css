@@ -93,3 +93,98 @@ body {
   line-height: 1.5;
   margin: 0 0 20px;
 }
+
+.app-nav a {
+  color: var(--ice-300);
+  font-size: 0.9rem;
+}
+
+.plan-status,
+.plan-error {
+  color: var(--birch-200);
+}
+
+.plan-error {
+  color: var(--ember-400);
+}
+
+.plan-auth,
+.plan-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.plan-auth form,
+.plan-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 320px;
+}
+
+.plan-auth label,
+.plan-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+  color: var(--birch-200);
+}
+
+.plan-auth input,
+.plan-form input {
+  background: var(--fjord-800);
+  border: 1px solid var(--fjord-600);
+  border-radius: 4px;
+  color: var(--ice-100);
+  padding: 8px 10px;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-auth button[type='submit'],
+.plan-form button[type='submit'] {
+  background: var(--ice-300);
+  color: var(--fjord-900);
+  border: none;
+  border-radius: 4px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.plan-link-button {
+  background: none;
+  border: none;
+  color: var(--ice-300);
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.plan-ribbon {
+  margin: 16px 0;
+}
+
+/* The bracket highlight -- a plain CSS transition, not an animated snap; see PlanRibbon.tsx
+   and Plan.tsx's own notes on why motion/react isn't introduced this phase. */
+.plan-ribbon-cell {
+  transition:
+    stroke 160ms ease-out,
+    stroke-width 160ms ease-out;
+}
+
+.plan-result {
+  background: var(--fjord-700);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.plan-headline {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
