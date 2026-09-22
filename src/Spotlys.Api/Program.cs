@@ -153,5 +153,6 @@ api.MapAuthEndpoints();
 api.MapGdprEndpoints();
 api.MapMeterEndpoints();
 api.MapConsumptionImportEndpoints();
+api.MapPeakEndpoints();
 
 app.Run();
