@@ -13,6 +13,10 @@ public sealed class PostgresFixture : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17").Build();
 
+    /// <summary>For tests that need to build their own DI container against the same real
+    /// Postgres instance (e.g. an Identity <c>UserManager</c>), not just a bare DbContext.</summary>
+    public string ConnectionString => _container.GetConnectionString();
+
     public SpotlysDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<SpotlysDbContext>()

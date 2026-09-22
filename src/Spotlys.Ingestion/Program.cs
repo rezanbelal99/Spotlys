@@ -3,12 +3,14 @@ using Microsoft.Extensions.Hosting;
 using Quartz;
 using Serilog;
 using Spotlys.Application.Hydrology;
+using Spotlys.Application.Metering;
 using Spotlys.Application.Pricing;
 using Spotlys.Application.Weather;
 using Spotlys.Domain.Pricing;
 using Spotlys.Infrastructure;
 using Spotlys.Ingestion;
 using Spotlys.Ingestion.Hydrology;
+using Spotlys.Ingestion.Metering;
 using Spotlys.Ingestion.Pricing;
 using Spotlys.Ingestion.Weather;
 
@@ -98,6 +100,8 @@ static async Task RunWorkerAsync(string[] args)
     builder.Services.AddScoped<IngestWeatherForecastJob>();
     builder.Services.AddScoped<IngestHydrologyUseCase>();
     builder.Services.AddScoped<IngestHydrologyJob>();
+    builder.Services.AddScoped<PurgeExpiredConsumptionUseCase>();
+    builder.Services.AddScoped<PurgeExpiredConsumptionJob>();
 
     var connectionString = builder.Configuration.GetConnectionString("Spotlys")
         ?? throw new InvalidOperationException("Missing ConnectionStrings:Spotlys.");
@@ -152,6 +156,17 @@ static async Task RunWorkerAsync(string[] args)
                 .WithInterval(1, IntervalUnit.Day)
                 .OnDaysOfTheWeek(DayOfWeek.Wednesday)
                 .InTimeZone(osloTimeZone)));
+
+        var purgeJobKey = new JobKey(PurgeExpiredConsumptionUseCase.JobName);
+        q.AddJob<QuartzIngestionJobAdapter<PurgeExpiredConsumptionJob>>(j => j
+            .WithIdentity(purgeJobKey)
+            .StoreDurably());
+
+        // docs/ARCHITECTURE.md §5: hourly, matching RecomputeMonthlyPeaks' own cadence.
+        q.AddTrigger(t => t
+            .ForJob(purgeJobKey)
+            .WithIdentity($"{PurgeExpiredConsumptionUseCase.JobName}-trigger")
+            .WithSimpleSchedule(s => s.WithInterval(TimeSpan.FromHours(1)).RepeatForever()));
 
         // Survives restarts, no double-firing across replicas (docs/ARCHITECTURE.md §5).
         // Schema is created by Spotlys.Migrator (see the AddQuartzSchema EF migration),

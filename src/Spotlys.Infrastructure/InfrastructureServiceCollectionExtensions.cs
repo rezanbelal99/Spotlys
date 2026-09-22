@@ -1,14 +1,19 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Spotlys.Application.Accounts;
 using Spotlys.Application.Forecasting;
 using Spotlys.Application.Hydrology;
 using Spotlys.Application.Ingestion;
+using Spotlys.Application.Metering;
 using Spotlys.Application.Pricing;
 using Spotlys.Application.Weather;
+using Spotlys.Infrastructure.Accounts;
 using Spotlys.Infrastructure.Forecasting;
 using Spotlys.Infrastructure.Hydrology;
 using Spotlys.Infrastructure.Ingestion;
+using Spotlys.Infrastructure.Metering;
 using Spotlys.Infrastructure.Pricing;
 using Spotlys.Infrastructure.Weather;
 
@@ -28,6 +33,25 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddDbContext<SpotlysDbContext>(options => options.UseNpgsql(connectionString));
 
+        // AddIdentityCore, not the full AddIdentity -- no role-based authorization anywhere
+        // in this product (docs/ARCHITECTURE.md §6), so AspNetRoles and friends are never
+        // created. Only the store-backed core here (UserManager, the EF store) -- every
+        // host needs this much for the Identity tables to be part of the EF model
+        // (Spotlys.Migrator applies them), but SignInManager and the token providers need
+        // IAuthenticationSchemeProvider/IDataProtectionProvider, which only a real web host
+        // provides. Registering those unconditionally here broke Migrator's and Ingestion's
+        // plain console DI containers (found live: dotnet-ef couldn't even construct the
+        // design-time DbContext). See AddSpotlysAuthentication below, called only from
+        // Spotlys.Api's Program.cs alongside cookie authentication itself.
+        services.AddIdentityCore<AppUser>(options =>
+            {
+                // ASP.NET's own sensible defaults, made explicit rather than left implicit --
+                // no scheme parameters, so CLAUDE.md rule 3 doesn't apply here.
+                options.Password.RequiredLength = 10;
+                options.User.RequireUniqueEmail = true;
+            })
+            .AddEntityFrameworkStores<SpotlysDbContext>();
+
         services.AddScoped<IPriceObservationRepository, PriceObservationRepository>();
         services.AddScoped<IIngestionRunWriter, IngestionRunRepository>();
         services.AddScoped<IIngestionRunReader, IngestionRunRepository>();
@@ -42,6 +66,9 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IModelVersionRepository, ModelVersionRepository>();
         services.AddSingleton<OnnxSessionCache>();
         services.AddScoped<IForecastService, OnnxForecastService>();
+        services.AddScoped<IMeterProfileRepository, MeterProfileRepository>();
+        services.AddScoped<IConsumptionReadingRepository, ConsumptionReadingRepository>();
+        services.AddScoped<IConsumptionRetentionPurgeWriter, ConsumptionRetentionPurgeRepository>();
 
         services.AddHttpClient<IDayAheadPriceSource, HvakosterstrommenPriceSource>(client =>
         {
@@ -68,6 +95,20 @@ public static class InfrastructureServiceCollectionExtensions
             client.BaseAddress = new Uri("https://biapi.nve.no/magasinstatistikk/");
             client.DefaultRequestHeaders.UserAgent.ParseAdd("spotlys/1.0 (+https://spotlys.no)");
         }).AddStandardResilienceHandler();
+
+        return services;
+    }
+
+    /// <summary>Adds SignInManager and the default token providers on top of
+    /// <see cref="AddSpotlysInfrastructure"/>'s store-only Identity registration -- called
+    /// only from <c>Spotlys.Api</c>, which is the one host that actually logs users in.
+    /// Requires <c>AddDataProtection()</c> and <c>AddAuthentication()</c> to already be
+    /// registered (Program.cs's job, alongside the cookie scheme itself).</summary>
+    public static IServiceCollection AddSpotlysAuthentication(this IServiceCollection services)
+    {
+        new IdentityBuilder(typeof(AppUser), services)
+            .AddDefaultTokenProviders()
+            .AddSignInManager();
 
         return services;
     }
