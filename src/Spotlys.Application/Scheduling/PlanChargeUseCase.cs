@@ -1,4 +1,5 @@
 using Spotlys.Application.Accounts;
+using Spotlys.Application.Common;
 using Spotlys.Application.Forecasting;
 using Spotlys.Application.Metering;
 using Spotlys.Application.Pricing;
@@ -8,10 +9,6 @@ using Spotlys.Domain.Pricing;
 using Spotlys.Domain.Scheduling;
 
 namespace Spotlys.Application.Scheduling;
-
-/// <summary>docs/FORECASTING.md §8: a range plus a counterfactual, structurally -- never a
-/// bare number (CLAUDE.md rule 8).</summary>
-public sealed record CostRange(decimal LowExVatNok, decimal HighExVatNok, decimal ExpectedExVatNok);
 
 /// <summary>The comparison a plan's "instead" line names -- always present, never optional
 /// (docs/FORECASTING.md §8: "never a single fake-precise number").</summary>

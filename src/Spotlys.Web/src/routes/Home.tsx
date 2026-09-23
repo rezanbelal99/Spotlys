@@ -50,6 +50,7 @@ export function Home() {
         <h1>Spotlys</h1>
         <nav className="app-nav">
           <Link to="/plan">Planlegg lading</Link>
+          <Link to="/model">Modellens treffsikkerhet</Link>
         </nav>
         <span className="zone-label">{DEMO_ZONE} · Kristiansand</span>
       </header>

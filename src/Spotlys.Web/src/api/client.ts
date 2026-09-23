@@ -190,6 +190,47 @@ export interface PlanResponse {
   isFullyScheduled: boolean
 }
 
+// --- Public model skill page (docs/ARCHITECTURE.md §6: GET /api/v1/model/skill, no auth) ---
+
+export interface LeadBucketSkill {
+  leadBucket: string
+  maeOrePerKwh: number
+  skillVsB1: number
+  pinballLoss: number
+  coverage50: number
+  coverage90: number
+}
+
+export interface DecisionRegret {
+  regretVsChargeOnArrivalNok: number
+  regretVsAlways0200Nok: number
+  backtestDays: number
+}
+
+export interface ModelSkillResponse {
+  zone: string
+  byLeadBucket: LeadBucketSkill[]
+  regret: DecisionRegret
+  reportGeneratedAtUtc: string
+}
+
+/** Null when no model.yml run has published a report yet for this zone (a real,
+ * expected 404 -- docs/DATA.md §6: the UI states this plainly rather than showing nothing
+ * or a spinner forever) -- distinct from `getJson`'s throw-on-any-non-ok, since 404 here is
+ * an operational state, not an error to surface as a generic failure. */
+export async function fetchModelSkill(zone: string): Promise<ModelSkillResponse | null> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/model/skill/${zone}`, {
+    credentials: 'include',
+  })
+  if (response.status === 404) {
+    return null
+  }
+  if (!response.ok) {
+    throw new Error(`/api/v1/model/skill/${zone} -> HTTP ${response.status.toString()}`)
+  }
+  return (await response.json()) as ModelSkillResponse
+}
+
 export function planCharge(
   meterProfileId: string,
   load: {

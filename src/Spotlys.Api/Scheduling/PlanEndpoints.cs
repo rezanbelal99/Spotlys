@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Spotlys.Api.Accounts;
 using Spotlys.Application.Accounts;
+using Spotlys.Application.Common;
 using Spotlys.Application.Scheduling;
 using Spotlys.Domain.Scheduling;
 

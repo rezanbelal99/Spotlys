@@ -12,6 +12,7 @@ using Spotlys.Api.Metering;
 using Spotlys.Api.Pricing;
 using Spotlys.Api.Scheduling;
 using Spotlys.Api.Status;
+using Spotlys.Application.Pricing;
 using Spotlys.Application.Scheduling;
 using Spotlys.Infrastructure;
 
@@ -115,7 +116,7 @@ builder.Services.AddCors(options =>
     // Vite dev server (docs/ARCHITECTURE.md §7). Production origin is added once the real
     // domain exists (docs/DEVOPS.md's deploy scope for this phase stays local).
     options.AddDefaultPolicy(policy => policy
-        .WithOrigins("http://localhost:5173")
+        .WithOrigins("http://localhost:5173", "http://localhost:5174")
         .AllowAnyHeader()
         .AllowAnyMethod()
         // Cookie auth (docs/ARCHITECTURE.md §6) needs the browser to send/accept the
@@ -127,6 +128,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<PlanChargeUseCase>();
+builder.Services.AddScoped<RegimeAdvisorUseCase>();
 
 var app = builder.Build();
 
@@ -163,5 +165,7 @@ api.MapMeterEndpoints();
 api.MapConsumptionImportEndpoints();
 api.MapPeakEndpoints();
 api.MapPlanEndpoints();
+api.MapRegimeAdvisorEndpoints();
+api.MapModelSkillEndpoints();
 
 app.Run();
