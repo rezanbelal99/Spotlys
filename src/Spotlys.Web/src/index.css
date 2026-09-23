@@ -93,3 +93,180 @@ body {
   line-height: 1.5;
   margin: 0 0 20px;
 }
+
+.app-nav {
+  display: flex;
+  gap: 12px;
+}
+
+.app-nav a {
+  color: var(--ice-300);
+  font-size: 0.9rem;
+}
+
+.plan-status,
+.plan-error {
+  color: var(--birch-200);
+}
+
+.plan-error {
+  color: var(--ember-400);
+}
+
+.plan-auth,
+.plan-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.plan-auth form,
+.plan-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 320px;
+}
+
+.plan-auth label,
+.plan-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+  color: var(--birch-200);
+}
+
+.plan-auth input,
+.plan-form input {
+  background: var(--fjord-800);
+  border: 1px solid var(--fjord-600);
+  border-radius: 4px;
+  color: var(--ice-100);
+  padding: 8px 10px;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-auth button[type='submit'],
+.plan-form button[type='submit'] {
+  background: var(--ice-300);
+  color: var(--fjord-900);
+  border: none;
+  border-radius: 4px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.plan-link-button {
+  background: none;
+  border: none;
+  color: var(--ice-300);
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.plan-ribbon {
+  margin: 16px 0;
+}
+
+/* The bracket highlight -- a plain CSS transition, not an animated snap; see PlanRibbon.tsx
+   and Plan.tsx's own notes on why motion/react isn't introduced this phase. */
+.plan-ribbon-cell {
+  transition:
+    stroke 160ms ease-out,
+    stroke-width 160ms ease-out;
+}
+
+.plan-result {
+  background: var(--fjord-700);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.plan-headline {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.model-section {
+  margin-bottom: 28px;
+}
+
+.model-section-title {
+  font-size: 1.1rem;
+  margin: 0 0 6px;
+}
+
+.model-section-note {
+  color: var(--birch-200);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.model-skill-chart {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.model-skill-label,
+.model-skill-value {
+  font-size: 11px;
+  fill: var(--birch-200);
+}
+
+.model-skill-axis {
+  stroke: var(--fjord-600);
+  stroke-width: 1;
+}
+
+/* Reused ice/ember hues for a good/bad indicator here -- a distinct meaning from the price
+   ramp's cheap/expensive semantics (docs/DESIGN.md §2), not the same scale repurposed. */
+.model-skill-bar-positive {
+  fill: var(--ice-300);
+}
+
+.model-skill-bar-negative {
+  fill: var(--ember-400);
+}
+
+.model-skill-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.model-skill-table th,
+.model-skill-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--fjord-700);
+}
+
+.model-skill-table th {
+  color: var(--birch-200);
+  font-weight: 500;
+}
+
+.model-generated-at {
+  color: var(--birch-200);
+  font-size: 0.8rem;
+}

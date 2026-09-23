@@ -57,8 +57,8 @@ export function Ribbon({ label, statusLabel, hourlyLines, rangeMin, rangeMax }: 
               fill={priceToColor(energyRateAfterSupportExVatOrePerKwh, rangeMin, rangeMax)}
             >
               <title>
-                {hourLabel(hour)} – {energyRateAfterSupportExVatOrePerKwh.toFixed(1)} øre/kWh
-                etter støtte · nettleie {line.isNightRate ? 'natt' : 'dag'}{' '}
+                {hourLabel(hour)} – {energyRateAfterSupportExVatOrePerKwh.toFixed(1)} øre/kWh etter
+                støtte · nettleie {line.isNightRate ? 'natt' : 'dag'}{' '}
                 {energileddRateExVatOrePerKwh.toFixed(1)} øre/kWh ·{' '}
                 {(line.totalExVatOre / 100).toFixed(2)} kr denne timen
               </title>

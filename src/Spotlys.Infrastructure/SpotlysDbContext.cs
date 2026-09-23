@@ -42,6 +42,8 @@ public sealed class SpotlysDbContext(DbContextOptions<SpotlysDbContext> options)
 
     internal DbSet<ModelVersionRow> ModelVersions => Set<ModelVersionRow>();
 
+    internal DbSet<ModelBacktestReportRow> ModelBacktestReports => Set<ModelBacktestReportRow>();
+
     internal DbSet<MeterProfileRow> MeterProfiles => Set<MeterProfileRow>();
 
     internal DbSet<ConsumptionReadingRow> ConsumptionReadings => Set<ConsumptionReadingRow>();

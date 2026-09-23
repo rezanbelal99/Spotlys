@@ -135,11 +135,21 @@ public static class LoadOptimizer
             .ThenBy(h => h)
             .ToList();
 
+        return AllocateInOrder(load, marginalCost, baselineLoadKw, ceilingKw, candidateHours);
+    }
+
+    private static (List<HourAllocation> Allocations, decimal RemainingKwh, decimal EnergyCostExVatOre) AllocateInOrder(
+        FlexibleLoad load,
+        IReadOnlyDictionary<DateTimeOffset, decimal> marginalCost,
+        IReadOnlyDictionary<DateTimeOffset, decimal> baselineLoadKw,
+        decimal ceilingKw,
+        IReadOnlyList<DateTimeOffset> candidateHoursInFillOrder)
+    {
         var remaining = load.EnergyKwh;
         var allocations = new List<HourAllocation>();
         var energyCostExVatOre = 0m;
 
-        foreach (var hour in candidateHours)
+        foreach (var hour in candidateHoursInFillOrder)
         {
             if (remaining <= 0m)
             {
@@ -172,6 +182,50 @@ public static class LoadOptimizer
         }
 
         return (allocations, remaining, energyCostExVatOre);
+    }
+
+    /// <summary>Fills the load starting at <see cref="FlexibleLoad.NotBefore"/> regardless
+    /// of cost -- the "plug in now" baseline docs/FORECASTING.md §8's counterfactual
+    /// compares against, and the naive strategy the property tests assert
+    /// <see cref="Optimize"/> always beats or matches. No self-imposed ceiling beyond what
+    /// the load's own <see cref="FlexibleLoad.MaxPowerKw"/> needs -- matches
+    /// <see cref="Optimize"/>'s own "always try enough headroom" candidate, so this isn't
+    /// artificially starved of headroom the real optimizer would have available too.</summary>
+    public static Schedule NaiveImmediateSchedule(
+        FlexibleLoad load,
+        IReadOnlyDictionary<DateTimeOffset, decimal> marginalCostExVatOrePerKwh,
+        IReadOnlyDictionary<DateTimeOffset, decimal> baselineLoadKw,
+        IReadOnlyList<CapacityStep> capacitySteps,
+        decimal currentThirdHighestPeakKw)
+    {
+        ArgumentNullException.ThrowIfNull(load);
+        ArgumentNullException.ThrowIfNull(marginalCostExVatOrePerKwh);
+        ArgumentNullException.ThrowIfNull(baselineLoadKw);
+        ArgumentNullException.ThrowIfNull(capacitySteps);
+
+        var highestBaselineKw = baselineLoadKw.Count > 0 ? baselineLoadKw.Values.Max() : 0m;
+        var ceiling = Math.Max(highestBaselineKw + load.MaxPowerKw, currentThirdHighestPeakKw);
+        var candidateHours = marginalCostExVatOrePerKwh.Keys
+            .Where(h => h >= load.NotBefore && h < load.Deadline)
+            .OrderBy(h => h)
+            .ToList();
+
+        var (allocations, remainingKwh, energyCostExVatOre) =
+            AllocateInOrder(load, marginalCostExVatOrePerKwh, baselineLoadKw, ceiling, candidateHours);
+
+        // Same rule Optimize itself uses: price off the peak actually realized, not the
+        // (here, deliberately generous) self-imposed ceiling.
+        var realizedPeakKw = allocations.Count == 0
+            ? currentThirdHighestPeakKw
+            : Math.Max(currentThirdHighestPeakKw, allocations.Max(a => baselineLoadKw.GetValueOrDefault(a.HourStartUtc, 0m) + a.AllocatedKwh));
+
+        var capacityDeltaExVatNok = Math.Max(0m,
+            GridTariff.CapacityStepMonthlyExVatNok(capacitySteps, realizedPeakKw) -
+            GridTariff.CapacityStepMonthlyExVatNok(capacitySteps, currentThirdHighestPeakKw));
+
+        return new Schedule(
+            allocations, realizedPeakKw, energyCostExVatOre + capacityDeltaExVatNok * 100m,
+            remainingKwh <= 0m, Math.Max(0m, remainingKwh), "naive");
     }
 
     /// <summary>Best-effort classification of what shaped this schedule, for
